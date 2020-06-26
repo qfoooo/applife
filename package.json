@@ -1,0 +1,21 @@
+{
+  "name": "applife",
+  "version": "0.0.0",
+  "description": "♻️ Take back the control of your app lifecycle",
+  "main": "srcs",
+  "scripts": {
+    "doc": "jsdoc -c jsdoc.js"
+  },
+  "keywords": [
+    "lifecycle",
+    "applife",
+    "life",
+    "app",
+    "status",
+    "gracefull shutdown",
+    "gracefull",
+    "shutdown"
+  ],
+  "author": "@qfoooo",
+  "license": "ISC"
+}
