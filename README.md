@@ -8,11 +8,13 @@
 ```js
 const al = require("applife")
 const { MongoDriver, OrmonEngine } = require("ormon")
+const logger = require("someLogger")
 const Server = require("qpi")
 
-al.setup({
-  config: () => ({ mongo: "mongodb://localhost:27017", port: 8080 }),
-})
+al.setup([
+  { config: () => process.env },
+  { logger: ({ config }) => someLogger({ logLevel: config.logLevel })}
+])
 
 al.boot({
   ormon: ({ config }) => {
@@ -50,18 +52,42 @@ o => setup => boot => up/exec => shutdown => x
 
 ### Setup / Boot / Shutdown
 
-Each of those methods takes an object as a parameter, that acts as a hashmap of
-tasks to execute.
-Once the task (that can be asynchronous) is complete, its value will be stored
-in a `context` object that will be passed to subsequent hooks.
+Each of these methods takes tasks as paramter.
+A tasks can be run either concurently if within an object and sequencially if
+within an array.
+Regardless, the task is an object where the keys will hold the value of the
+function to resolve (which can be asynchronous).
+The object will be passed to subsequent calls.
+
 
 E.g.
 ```js
-al.setup({
-  config: () => process.env
-})
+al.setup([                        // notice the array
+  { config: () => process.env },  // loads your env and put it in `config`
+  {                               // 2nd step
+    logger: ({ config }) =>       // the context is passed, thus config is available
+      logger.logLevel(config.lvl),// set the log level to `process.env.lvl`)
+  }
+])
+```
 
-al.exec(console.log) // will display the env
+You can absoluetely go crazy with nested arrays and such:
+```js
+al.boot([
+  // 1st: load env
+  { config: () => process.env },
+  [
+    // 2nd: load the logger AND redis CONCURENTLY
+    {
+      logger: ({ config }) => logger.logLevel(config.lvl),
+      redis: ({ config }) => redis.createClient(config.redis_port, config.redis_url)
+    },
+    // 3rd: setup redlock (after logger & redis have done starting)
+    {
+      redlock: ({config, redis }) => redlock(redis, { retryCount: config.redlock_retry })
+    }
+  ]
+])
 ```
 
 ### Exec & Up
