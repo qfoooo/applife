@@ -13,6 +13,19 @@ class LifeCycle {
     this._shutdown = {}
   }
 
+  /** @private */
+  async _resolve(tasks) {
+    if (Array.isArray(tasks)) {
+      for (const task of tasks)
+        await this._resolve(task)
+    }
+    else {
+      const keys = Object.keys(tasks)
+      const results = await Promise.all(keys.map(task => tasks[task](this._context)))
+      results.forEach((result, idx) => { this._context[keys[idx]] = result })
+    }
+  }
+
   /** First stage of the lifecyle: setup
    *
    *  Here do anything that needs to load before anything else.
@@ -22,7 +35,7 @@ class LifeCycle {
    *
    *  If any task fails, the app will exit with status code 1
    *
-   *  @param {Object} tasks Each tasks to execute
+   *  @param {Object|Object[]} tasks Each tasks to execute
    *
    *  @example
    *  lf.setup({
@@ -30,17 +43,13 @@ class LifeCycle {
    *  })
    */
   setup(tasks) {
-    this._setup = { ...tasks }
+    this._setup = tasks
   }
 
   /** @private */
   async _runSetup() {
     try {
-      const tasks = Object.keys(this._setup)
-      const results = await Promise.all(tasks.map(task => this._setup[task]()))
-      results.forEach((result, idx) => {
-        this._context[tasks[idx]] = result
-      })
+      await this._resolve(this._setup)
     }
     catch (e) {
       console.error(e)
@@ -57,7 +66,7 @@ class LifeCycle {
    *
    *  If any tasks fails, the app will exit with status code 2
    *
-   *  @param {Object} tasks Which tasks to execute
+   *  @param {Object|Object[]} tasks Which tasks to execute
    *
    *  @example
    *  lf.boot({
@@ -65,19 +74,13 @@ class LifeCycle {
    *  })
    */
   boot(tasks) {
-    this._boot = { ...tasks }
+    this._boot = tasks
   }
 
   /** @private */
   async _runBoot() {
     try {
-      const tasks = Object.keys(this._boot)
-      const results = await Promise.all(
-        tasks.map(task => this._boot[task](this._context)),
-      )
-      results.forEach((result, idx) => {
-        this._context[tasks[idx]] = result
-      })
+      await this._resolve(this._boot)
     }
     catch (e) {
       console.error(e)
@@ -169,22 +172,16 @@ class LifeCycle {
    *
    *  If one of the cleanup processes fails, it will exit the app with status code 3
    *
-   *  @param {Object} tasks Which task to execute
+   *  @param {Object|Object[]} tasks Which task to execute
    */
   shutdown(tasks) {
-    this._shutdown = { ...tasks }
+    this._shutdown = tasks
   }
 
   /** @private */
   async _runShutdown() {
     try {
-      const tasks = Object.keys(this._shutdown)
-      const results = await Promise.all(
-        tasks.map(task => this._shutdown[task](this._context)),
-      )
-      results.forEach((result, idx) => {
-        this._context[tasks[idx]] = result
-      })
+      await this._resolve(this._shutdown)
     }
     catch (e) {
       console.error(e)
