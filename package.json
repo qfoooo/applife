@@ -1,6 +1,6 @@
 {
   "name": "applife",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "♻️ Take back the control of your app lifecycle",
   "main": "srcs",
   "scripts": {

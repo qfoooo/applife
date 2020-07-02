@@ -26,6 +26,22 @@ class LifeCycle {
     }
   }
 
+  /** @private */
+  async _appendTask(to, tasks) {
+    if (Array.isArray(tasks)) {
+      if (Array.isArray(this[to]))
+        this[to] = [ ...this[to], ...tasks ]
+      else
+        this[to] = [ this[to], ...tasks ]
+    }
+    else {
+      if (Array.isArray(this[to]))
+        this[to] = [ ...this[to].slice(0, -1), { ...this[to].slice(-1)[0], ...tasks }]
+      else
+        this[to] = { ...this[to], ...tasks }
+    }
+  }
+
   /** First stage of the lifecyle: setup
    *
    *  Here do anything that needs to load before anything else.
@@ -43,7 +59,7 @@ class LifeCycle {
    *  })
    */
   setup(tasks) {
-    this._setup = tasks
+    this._appendTask("_setup", tasks)
   }
 
   /** @private */
@@ -74,7 +90,7 @@ class LifeCycle {
    *  })
    */
   boot(tasks) {
-    this._boot = tasks
+    this._appendTask("_boot", tasks)
   }
 
   /** @private */
@@ -150,7 +166,11 @@ class LifeCycle {
   _runFailure() {
     const self = this
     // eslint-disable-next-line require-jsdoc,max-len
-    const handle = evt => (...data) => self._runShutdown((self._failure[evt] || self._failure.fallback || console.error)(...data))
+    const handle = evt => data => {
+      // TODO: What if we want to swallow the error
+      (self._failure[evt] || self._failure.fallback || console.error)(data, self._context, evt)
+      self._runShutdown()
+    }
 
     ;[
       "multipleResolves",
@@ -175,7 +195,7 @@ class LifeCycle {
    *  @param {Object|Object[]} tasks Which task to execute
    */
   shutdown(tasks) {
-    this._shutdown = tasks
+    this._appendTask("_shutdown", tasks)
   }
 
   /** @private */
