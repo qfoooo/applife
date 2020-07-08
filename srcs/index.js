@@ -13,6 +13,8 @@ class LifeCycle {
     this._shutdown = {}
   }
 
+  get $ctx() { return this._context }
+
   /** @private */
   async _resolve(tasks) {
     if (Array.isArray(tasks)) {
